@@ -59,12 +59,9 @@ var addStoryPointsForColumn = (column) => {
     .from(column.getElementsByClassName('issue-card'))
     .filter(card => !card.classList.contains('sortable-ghost'))
     .map(card => {
-      const labels = Array
-        .from(card.getElementsByClassName('labels'))
-
       const estimateLabels = Array
-        .from(card.getElementsByClassName('issue-card-label'))
-        .filter(label => label.innerText.includes('estimate'))
+        .from(card.getElementsByClassName('IssueLabel'))
+        .filter(label => label.getAttribute('data-name').includes("estimate"))
 
       const firstEstimateText = (
         estimateLabels.length > 0 ? estimateLabels[0].innerText.trim() : null)

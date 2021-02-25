@@ -35,34 +35,47 @@ var resetStoryPointsForColumn = (column) => {
   }
 };
 
-var titleWithTotalPoints = (title, points, unestimated) => {
+var titleWithTotalPoints = (allPoints, onlyViewPoints) => {
+
     let unestimated_element = "";
     let points_element = "";
 
-    if (unestimated > 0) {
-      unestimated_element = `${unestimated} missing estimate`;
+    if (allPoints.columnUnestimated > 0) {
+      if (allPoints.columnUnestimated == onlyViewPoints.columnUnestimated) {
+        unestimated_element = `${allPoints.columnUnestimated} missing estimate`;
+      } else {
+        unestimated_element = `${onlyViewPoints.columnUnestimated}/${allPoints.columnUnestimated} missing estimate`;
+      }
     }
 
-    if (points > 0) {
-      points_element = `${points} points`;
+    if (allPoints.columnStoryPoints > 0) {
+      if(allPoints.columnStoryPoints == onlyViewPoints.columnStoryPoints) {
+        points_element = `${allPoints.columnStoryPoints} points`;
+      } else {
+        points_element = `${onlyViewPoints.columnStoryPoints}/${allPoints.columnStoryPoints} points`;
+      }
     }
 
     if (points_element && unestimated_element) {
       unestimated_element = `, ${unestimated_element}`;
     }
 
-    return `${title} card${pluralize(title)} <span class="github-project-story-points" style="font-size:xx-small">(${points_element}${unestimated_element})</span>`;
+    if(allPoints.cardLength == onlyViewPoints.cardLength) {
+      return `${allPoints.cardLength} card${pluralize(allPoints.cardLength)} <span class="github-project-story-points" style="font-size:xx-small">(${points_element}${unestimated_element})</span>`;
+    } else {
+      return `${onlyViewPoints.cardLength}/${allPoints.cardLength} card${pluralize(allPoints.cardLength)} <span class="github-project-story-points" style="font-size:xx-small">(${points_element}${unestimated_element})</span>`;
+    }
 };
 
 var addStoryPointsForColumn = (column) => {
-  const columnCards = Array
-    .from(column.getElementsByClassName('issue-card'))
-    .filter(card => !card.classList.contains('sortable-ghost'))
+  const columnCards = (onlyDisplay) => { 
+    return Array.from(column.getElementsByClassName('issue-card'))
+    .filter(card => !(onlyDisplay && card.classList.contains('d-none')))
     .map(card => {
       const estimateLabels = Array
         .from(card.getElementsByClassName('IssueLabel'))
         .filter(label => label.getAttribute('data-name').includes("estimate"))
-
+        
       const firstEstimateText = (
         estimateLabels.length > 0 ? estimateLabels[0].innerText.trim() : null)
 
@@ -79,18 +92,38 @@ var addStoryPointsForColumn = (column) => {
         storyPoints
       };
     });
+  };
+  
   const columnCountElement = column.getElementsByClassName('js-column-card-count')[0];
 
-  let columnStoryPoints = 0;
-  let columnUnestimated = 0;
-
-  for (let card of columnCards) {
-    columnStoryPoints += card.storyPoints;
-    columnUnestimated += (card.estimated ? 0 : 1);
+  let onlyViewPoints = {
+    cardLength : 0,
+    columnStoryPoints : 0,
+    columnUnestimated : 0
+  };
+  let allPoints = {
+    cardLength : 0,
+    columnStoryPoints : 0,
+    columnUnestimated : 0
+  };
+ 
+  let onlyDisplayCards = columnCards(true);
+  onlyViewPoints.cardLength = onlyDisplayCards.length;
+  for (let card of onlyDisplayCards) {
+    onlyViewPoints.columnStoryPoints += card.storyPoints;
+    onlyViewPoints.columnUnestimated += (card.estimated ? 0 : 1);
   }
+  let allCards = columnCards(false);
+  allPoints.cardLength = allCards.length;
+  for (let card of allCards) {
+    allPoints.columnStoryPoints += card.storyPoints;
+    allPoints.columnUnestimated += (card.estimated ? 0 : 1);
+  }
+
+
   // Apply DOM changes:
-  if (columnStoryPoints || columnUnestimated) {
-    columnCountElement.innerHTML = titleWithTotalPoints(columnCards.length, columnStoryPoints, columnUnestimated);
+  if (allPoints.columnStoryPoints || allPoints.columnUnestimated) {
+    columnCountElement.innerHTML = titleWithTotalPoints(allPoints, onlyViewPoints);
   }
 };
 
